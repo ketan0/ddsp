@@ -9,8 +9,6 @@ import ddsp.training
 # Model
 # =====
 
-include 'models/solo_instrument.gin'
-
 get_model.model = @models.VAE()
 
 # Preprocessor
@@ -42,7 +40,6 @@ VAE.losses = [
 # EmbeddingLoss.weight = 1.0
 # EmbeddingLoss.loss_type = 'L1'
 # EmbeddingLoss.pretrained_model_save_dir = '/content/drive/My Drive/counterfactual_music_dataset/ddsp-solo-instrument'
-
 
 PretrainedCREPEEmbeddingLoss.weight = 1.0
 PretrainedCREPEEmbeddingLoss.loss_type = 'L1'
