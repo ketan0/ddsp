@@ -262,8 +262,9 @@ class VAELoss(Loss):
     loss += self.embedding_loss(target_audio, audio)
 
     #KLD loss
-    loss += tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_logsigma - z_mean ** 2 -
-                                                tf.exp(z_logsigma), axis=(1,2)), axis=0)
+    z_logsigma_sq = z_logsigma ** 2
+    loss += tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_logsigma_sq - z_mean ** 2 -
+                                                tf.exp(z_logsigma_sq), axis=(1,2)), axis=0)
 
     return loss
 
