@@ -8,6 +8,9 @@ import ddsp.training
 # =====
 # Model
 # =====
+
+include 'models/solo_instrument.gin'
+
 get_model.model = @models.VAE()
 
 # Preprocessor
@@ -57,6 +60,8 @@ ProcessorGroup.dag = [
     ['noise_magnitudes']),
   (@processors.Add(),
     ['filtered_noise/signal', 'harmonic/signal']),
+  (@effects.Reverb(),
+    ['add/signal']),
 ]
 
 # Harmonic Synthesizer
@@ -74,3 +79,8 @@ FilteredNoise.scale_fn = @core.exp_sigmoid
 
 # Add
 processors.Add.name = 'add'
+
+# Reverb
+Reverb.name = 'reverb'
+Reverb.reverb_length = 48000
+Reverb.trainable = True

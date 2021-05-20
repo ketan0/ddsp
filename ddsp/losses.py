@@ -298,12 +298,12 @@ class EmbeddingLoss(Loss):
     super().__init__(name=name)
     self.weight = weight
     self.loss_type = loss_type
-    gin_file = os.path.join(pretrained_model_save_dir, 'operative_config-0.gin')
-    gin.parse_config_file(gin_file)
+    # gin_file = os.path.join(pretrained_model_save_dir, 'operative_config-0.gin')
+    # gin.parse_config_file(gin_file)
 
     # Load model
     model = ddsp.training.models.Autoencoder()
-    model.restore(SAVE_DIR)
+    model.restore(pretrained_model_save_dir)
     self.pretrained_model = model
 
   def call(self, target_audio, audio):
