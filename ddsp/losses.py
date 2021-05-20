@@ -20,6 +20,7 @@ from typing import Dict, Text
 import os
 
 import crepe
+import ddsp.training
 from ddsp import dags
 from ddsp import spectral_ops
 from ddsp.core import hz_to_midi
