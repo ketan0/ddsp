@@ -242,6 +242,7 @@ class SpectralLoss(Loss):
 
     return loss
 
+
 @gin.register
 class VAELoss(Loss):
   """Variational autoencoder loss.
@@ -253,12 +254,12 @@ class VAELoss(Loss):
     """Constructor.
     """
     super().__init__(name=name)
-    self.spectral_loss = SpectralLoss()
+    self.embedding_loss = EmbeddingLoss()
 
   def call(self, target_audio, audio, z_mean, z_logsigma):
     loss = 0.0
 
-    loss += self.spectral_loss(target_audio, audio)
+    loss += self.embedding_loss(target_audio, audio)
 
     #KLD loss
     loss += tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_logsigma - z_mean ** 2 -
