@@ -17,10 +17,8 @@
 
 import functools
 from typing import Dict, Text
-import os
 
 import crepe
-import ddsp.training
 from ddsp import dags
 from ddsp import spectral_ops
 from ddsp.core import hz_to_midi
@@ -256,7 +254,7 @@ class VAELoss(Loss):
     """Constructor.
     """
     super().__init__(name=name)
-    self.embedding_loss = EmbeddingLoss() # params loaded through gin
+    self.embedding_loss = EmbeddingLoss()
 
   def call(self, target_audio, audio, z_mean, z_logsigma):
     loss = 0.0
@@ -293,18 +291,12 @@ class EmbeddingLoss(Loss):
   def __init__(self,
                weight=1.0,
                loss_type='L1',
-               pretrained_model_save_dir=None,
+               pretrained_model=None,
                name='embedding_loss'):
     super().__init__(name=name)
     self.weight = weight
     self.loss_type = loss_type
-    # gin_file = os.path.join(pretrained_model_save_dir, 'operative_config-0.gin')
-    # gin.parse_config_file(gin_file)
-
-    # Load model
-    model = ddsp.training.models.Autoencoder()
-    model.restore(pretrained_model_save_dir)
-    self.pretrained_model = model
+    self.pretrained_model = pretrained_model
 
   def call(self, target_audio, audio):
     loss = 0.0
