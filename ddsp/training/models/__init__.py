@@ -16,6 +16,7 @@
 """Module with all the global configurable models for training."""
 
 from ddsp.training.models.autoencoder import Autoencoder
+from ddsp.training.models.vae import VAE
 from ddsp.training.models.inverse_synthesis import InverseSynthesis
 from ddsp.training.models.midi_autoencoder import MidiAutoencoder
 from ddsp.training.models.midi_autoencoder import ZMidiAutoencoder
@@ -26,6 +27,7 @@ import gin
 _configurable = lambda cls: gin.configurable(cls, module=__name__)
 
 Autoencoder = _configurable(Autoencoder)
+VAE = _configurable(VAE)
 InverseSynthesis = _configurable(InverseSynthesis)
 MidiAutoencoder = _configurable(MidiAutoencoder)
 ZMidiAutoencoder = _configurable(ZMidiAutoencoder)

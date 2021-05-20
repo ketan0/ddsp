@@ -127,6 +127,86 @@ class MfccTimeDistributedRnnEncoder(ZEncoder):
     return z
 
 
+@gin.register
+class MfccTimeDistributedRnnVariationalEncoder(ZEncoder):
+  """Use MFCCs as latent variables, distribute across timesteps."""
+
+  def __init__(self,
+               rnn_channels=512,
+               rnn_type='gru',
+               z_dims=32,
+               z_time_steps=250,
+               **kwargs):
+    super().__init__(**kwargs)
+    if z_time_steps not in [63, 125, 250, 500, 1000]:
+      raise ValueError(
+          '`z_time_steps` currently limited to 63,125,250,500 and 1000')
+    self.z_audio_spec = {
+        '63': {
+            'fft_size': 2048,
+            'overlap': 0.5
+        },
+        '125': {
+            'fft_size': 1024,
+            'overlap': 0.5
+        },
+        '250': {
+            'fft_size': 1024,
+            'overlap': 0.75
+        },
+        '500': {
+            'fft_size': 512,
+            'overlap': 0.75
+        },
+        '1000': {
+            'fft_size': 256,
+            'overlap': 0.75
+        }
+    }
+    self.fft_size = self.z_audio_spec[str(z_time_steps)]['fft_size']
+    self.overlap = self.z_audio_spec[str(z_time_steps)]['overlap']
+
+    # Layers.
+    self.z_norm = nn.Normalize('instance')
+    self.rnn = nn.Rnn(rnn_channels, rnn_type)
+    self._enc_mu_log_sigma = tfkl.Dense(2 * z_dims)
+
+  def _sample_latent(self, h_enc):
+    """
+    Return the latent normal sample z ~ N(mu, sigma^2)
+    """
+    mu_log_sigma = self._enc_mu_log_sigma(h_enc)
+    z_dims = mu_log_sigma.shape[-1] // 2
+    mu = mu_log_sigma[:, :, :z_dims]
+    log_sigma = mu_log_sigma[:, :, z_dims:]
+    sigma = tf.exp(log_sigma)
+    std_z = tf.random.normal(sigma.shape, mean=0, stddev=1)
+
+    self.z_mean = mu
+    self.z_logsigma = log_sigma
+
+    return mu + sigma * std_z  # Reparameterization trick
+
+  def compute_z(self, audio):
+    mfccs = spectral_ops.compute_mfcc(
+        audio,
+        lo_hz=20.0,
+        hi_hz=8000.0,
+        fft_size=self.fft_size,
+        mel_bins=128,
+        mfcc_bins=30,
+        overlap=self.overlap,
+        pad_end=True)
+
+    # Normalize.
+    z = self.z_norm(mfccs[:, :, tf.newaxis, :])[:, :, 0, :]
+    # Run an RNN over the latents.
+    z = self.rnn(z)
+    z = self._sample_latent(z)
+    # Bounce down to compressed z dimensions.
+    # z = self.dense_out(z)
+    return z
+
 # Transcribing Autoencoder Encoders --------------------------------------------
 @gin.register
 class ResnetSinusoidalEncoder(nn.DictLayer):

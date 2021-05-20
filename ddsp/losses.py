@@ -242,6 +242,29 @@ class SpectralLoss(Loss):
 
     return loss
 
+@gin.register
+class VAELoss(Loss):
+  """Variational autoencoder loss.
+
+  Reconstruction loss (SpectralLoss) + KL-Divergence from prior
+  """
+
+  def __init__(self, name='vae_loss'):
+    """Constructor.
+    """
+    super().__init__(name=name)
+    self.spectral_loss = SpectralLoss()
+
+  def call(self, target_audio, audio, z_mean, z_logsigma):
+    loss = 0.0
+
+    loss += self.spectral_loss(target_audio, audio)
+
+    #KLD loss
+    loss += tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_logsigma - z_mean ** 2 -
+                                                tf.exp(z_logsigma), axis=(1,2)), axis=0)
+
+    return loss
 
 
 
