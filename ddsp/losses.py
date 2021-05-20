@@ -254,7 +254,7 @@ class VAELoss(Loss):
     """Constructor.
     """
     super().__init__(name=name)
-    self.embedding_loss = EmbeddingLoss()
+    self.embedding_loss = PretrainedCREPEEmbeddingLoss()
 
   def call(self, target_audio, audio, z_mean, z_logsigma):
     loss = 0.0
