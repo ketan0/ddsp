@@ -254,7 +254,7 @@ class VAELoss(Loss):
     """Constructor.
     """
     super().__init__(name=name)
-    self.embedding_loss = EmbeddingLoss()
+    self.embedding_loss = EmbeddingLoss() # params loaded through gin
 
   def call(self, target_audio, audio, z_mean, z_logsigma):
     loss = 0.0
@@ -291,12 +291,18 @@ class EmbeddingLoss(Loss):
   def __init__(self,
                weight=1.0,
                loss_type='L1',
-               pretrained_model=None,
+               pretrained_model_save_dir=None,
                name='embedding_loss'):
     super().__init__(name=name)
     self.weight = weight
     self.loss_type = loss_type
-    self.pretrained_model = pretrained_model
+    gin_file = os.path.join(pretrained_model_save_dir, 'operative_config-0.gin')
+    gin.parse_config_file(gin_file)
+
+    # Load model
+    model = ddsp.training.models.Autoencoder()
+    model.restore(SAVE_DIR)
+    self.pretrained_model = model
 
   def call(self, target_audio, audio):
     loss = 0.0
