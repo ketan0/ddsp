@@ -254,11 +254,13 @@ class VAELoss(Loss):
     """Constructor.
     """
     super().__init__(name=name)
+    self.spectral_loss = SpectralLoss()
     self.embedding_loss = PretrainedCREPEEmbeddingLoss()
 
   def call(self, target_audio, audio, z_mean, z_logsigma):
     loss = 0.0
 
+    loss += self.spectral_loss(target_audio, audio)
     loss += self.embedding_loss(target_audio, audio)
 
     #KLD loss
