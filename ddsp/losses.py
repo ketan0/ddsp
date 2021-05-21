@@ -259,18 +259,45 @@ class VAELoss(MultiLoss):
   Reconstruction loss + KL-Divergence from prior
   """
 
-  def __init__(self, name='vae_loss'):
+  def __init__(self, name='vae_loss', cyclic_annealing=True):
     """Constructor.
     """
     super().__init__(name=name)
     # self.spectral_loss = SpectralLoss()
     self.embedding_loss = PretrainedCREPEEmbeddingLoss()
+    self.cyclic_annealing = cyclic_annealing
+    if self.cyclic_annealing:
+      self.beta_cycle = self.frange_cycle_linear(30000)
+      self.beta_i = 0
 
-  def call(self, target_audio, audio, z_mean, z_log_var):
+  def frange_cycle_linear(self, n_iter, start=0.0, stop=1.0,  n_cycle=4, ratio=0.5):
+    L = [stop] * n_iter
+    period = n_iter/n_cycle
+    step = (stop-start)/(period*ratio) # linear schedule
+
+    for c in range(n_cycle):
+      v, i = start, 0
+      while v <= stop and (int(i+c*period) < n_iter):
+        L[int(i+c*period)] = v
+        v += step
+        i += 1
+    return L
+
+  def select_beta(self):
+    if self.cyclic_annealing:
+      beta = self.beta_cycle[self.beta_i] #TODO
+      self.beta_i = (self.beta_i + 1) % len(self.beta_cycle)
+    else:
+      beta = 1
+    return beta
+
+  def call(self, target_audio, audio, z_mean, z_log_var, beta):
     losses = {}
     # losses['reconstruction_loss'] = self.spectral_loss(target_audio, audio)
     losses['reconstruction_loss'] = self.embedding_loss(target_audio, audio)
-    losses['kld_loss'] = tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_log_var - z_mean ** 2 -
+    # Multiply by beta for cyclic annealing
+    beta = select_beta()
+    losses['kld_loss'] = beta * tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_log_var - z_mean ** 2 -
                                                              tf.exp(z_log_var), axis=(1,2)), axis=0)
 
     return losses
