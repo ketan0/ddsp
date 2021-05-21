@@ -291,14 +291,14 @@ class VAELoss(MultiLoss):
       beta = 1
     return beta
 
-  def call(self, target_audio, audio, z_mean, z_log_var, beta):
+  def call(self, target_audio, audio, z_mean, z_log_var):
     losses = {}
     # losses['reconstruction_loss'] = self.spectral_loss(target_audio, audio)
     losses['reconstruction_loss'] = self.embedding_loss(target_audio, audio)
     # Multiply by beta for cyclic annealing
     beta = select_beta()
     losses['kld_loss'] = beta * tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_log_var - z_mean ** 2 -
-                                                             tf.exp(z_log_var), axis=(1,2)), axis=0)
+                                                                    tf.exp(z_log_var), axis=(1,2)), axis=0)
 
     return losses
 
