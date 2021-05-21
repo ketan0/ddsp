@@ -66,6 +66,6 @@ class VAE(Model):
 
     if training:
       self._update_losses_dict(self.loss_objs, features['audio'], outputs['audio_synth'],
-                               self.encoder.z_mean, self.encoder.z_logsigma)
+                               self.encoder.z_mean, self.encoder.z_log_var)
 
     return outputs
