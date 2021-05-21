@@ -169,21 +169,21 @@ class MfccTimeDistributedRnnVariationalEncoder(ZEncoder):
     # Layers.
     self.z_norm = nn.Normalize('instance')
     self.rnn = nn.Rnn(rnn_channels, rnn_type)
-    self._enc_mu_log_sigma = tfkl.Dense(2 * z_dims)
+    self._enc_mu_log_var = tfkl.Dense(2 * z_dims)
 
   def _sample_latent(self, h_enc):
     """
     Return the latent normal sample z ~ N(mu, sigma^2)
     """
-    mu_log_sigma = self._enc_mu_log_sigma(h_enc)
-    z_dims = mu_log_sigma.shape[-1] // 2
-    mu = mu_log_sigma[:, :, :z_dims]
-    log_sigma = mu_log_sigma[:, :, z_dims:]
-    sigma = tf.exp(log_sigma)
-    std_z = tf.random.normal(sigma.shape, mean=0, stddev=1)
+    mu_log_var = self._enc_mu_log_var(h_enc)
+    z_dims = mu_log_var.shape[-1] // 2
+    mu = mu_log_var[:, :, :z_dims]
+    log_var = mu_log_var[:, :, z_dims:]
+    sigma = tf.exp(log_var / 2)
+    std_z = tf.random.normal(sigma.shape, mean=0., stddev=1.)
 
     self.z_mean = mu
-    self.z_logsigma = log_sigma
+    self.z_log_var = log_var
 
     return mu + sigma * std_z  # Reparameterization trick
 
