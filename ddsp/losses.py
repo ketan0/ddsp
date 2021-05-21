@@ -46,6 +46,15 @@ class Loss(tfkl.Layer):
     loss = self(*args, **kwargs)
     return {self.name: loss}
 
+class MultiLoss(tfkl.Layer):
+  """Base class. Duck typing: Losses just must implement get_losses_dict().
+  in call(), MultiLosses should return a dict of loss names => losses.
+  """
+
+  def get_losses_dict(self, *args, **kwargs):
+    """Returns a dictionary of losses for the model."""
+    loss_dict = self(*args, **kwargs)
+    return loss_dict
 
 @gin.register
 class LossGroup(dags.DAGLayer):
@@ -244,31 +253,27 @@ class SpectralLoss(Loss):
 
 
 @gin.register
-class VAELoss(Loss):
+class VAELoss(MultiLoss):
   """Variational autoencoder loss.
 
-  Reconstruction loss (SpectralLoss) + KL-Divergence from prior
+  Reconstruction loss + KL-Divergence from prior
   """
 
   def __init__(self, name='vae_loss'):
     """Constructor.
     """
     super().__init__(name=name)
-    self.spectral_loss = SpectralLoss()
+    # self.spectral_loss = SpectralLoss()
     self.embedding_loss = PretrainedCREPEEmbeddingLoss()
 
-  def call(self, target_audio, audio, z_mean, z_logsigma):
-    loss = 0.0
+  def call(self, target_audio, audio, z_mean, z_log_var):
+    losses = {}
+    # losses['reconstruction_loss'] = self.spectral_loss(target_audio, audio)
+    losses['reconstruction_loss'] = self.embedding_loss(target_audio, audio)
+    losses['kld_loss'] = tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_log_var - z_mean ** 2 -
+                                                             tf.exp(z_log_var), axis=(1,2)), axis=0)
 
-    loss += self.spectral_loss(target_audio, audio)
-    loss += self.embedding_loss(target_audio, audio)
-
-    #KLD loss
-    z_logsigma_sq = z_logsigma ** 2
-    loss += tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_logsigma_sq - z_mean ** 2 -
-                                                tf.exp(z_logsigma_sq), axis=(1,2)), axis=0)
-
-    return loss
+    return losses
 
 
 
