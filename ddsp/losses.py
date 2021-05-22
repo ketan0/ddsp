@@ -263,8 +263,8 @@ class VAELoss(MultiLoss):
     """Constructor.
     """
     super().__init__(name=name)
-    # self.spectral_loss = SpectralLoss()
-    self.embedding_loss = PretrainedCREPEEmbeddingLoss()
+    self.spectral_loss = SpectralLoss()
+    # self.embedding_loss = PretrainedCREPEEmbeddingLoss()
     self.cyclic_annealing = cyclic_annealing
     if self.cyclic_annealing:
       self.beta_cycle = self.frange_cycle_linear(30000)
@@ -293,12 +293,12 @@ class VAELoss(MultiLoss):
 
   def call(self, target_audio, audio, z_mean, z_log_var):
     losses = {}
-    # losses['reconstruction_loss'] = self.spectral_loss(target_audio, audio)
-    losses['reconstruction_loss'] = self.embedding_loss(target_audio, audio)
+    losses['reconstruction_loss'] = self.spectral_loss(target_audio, audio)
+    # losses['reconstruction_loss'] = self.embedding_loss(target_audio, audio)
     # Multiply by beta for cyclic annealing
-    beta = self.select_beta()
-    losses['kld_loss'] = beta * tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_log_var - z_mean ** 2 -
-                                                                    tf.exp(z_log_var), axis=(1,2)), axis=0)
+    # beta = self.select_beta()
+    # losses['kld_loss'] = beta * tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_log_var - z_mean ** 2 -
+    #                                                                 tf.exp(z_log_var), axis=(1,2)), axis=0)
 
     return losses
 

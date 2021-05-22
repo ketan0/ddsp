@@ -35,8 +35,8 @@ RnnFcDecoder.output_splits = (('amps', 1),
 
 # Losses
 VAE.losses = [
-    # @losses.VAELoss(),
-    @losses.SpectralLoss(),
+    @losses.VAELoss(),
+    # @losses.SpectralLoss(),
 ]
 
 PretrainedCREPEEmbeddingLoss.weight = 1.0
