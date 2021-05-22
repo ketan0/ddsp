@@ -251,6 +251,11 @@ class SpectralLoss(Loss):
 
     return loss
 
+class SpectralLossVAECompat(SpectralLoss):
+    def __init__(self, *args, **kwargs):
+      super().__init__(*args, **kwargs)
+    def call(self, target_audio, audio, z_mean, z_log_var):
+      return super().call(target_audio, audio)
 
 @gin.register
 class VAELoss(MultiLoss):
@@ -1032,5 +1037,3 @@ class ParamLoss(Loss):
     # Take the difference.
     loss = mean_difference(pred, target, self.loss_type, weights)
     return self.weight * loss
-
-
