@@ -35,11 +35,9 @@ RnnFcDecoder.output_splits = (('amps', 1),
 
 # Losses
 VAE.losses = [
-    @losses.VAELoss(),
+    # @losses.VAELoss(),
+    @losses.SpectralLoss(),
 ]
-# EmbeddingLoss.weight = 1.0
-# EmbeddingLoss.loss_type = 'L1'
-# EmbeddingLoss.pretrained_model_save_dir = '/content/drive/My Drive/counterfactual_music_dataset/ddsp-solo-instrument'
 
 PretrainedCREPEEmbeddingLoss.weight = 1.0
 PretrainedCREPEEmbeddingLoss.loss_type = 'L1'
@@ -47,9 +45,9 @@ PretrainedCREPEEmbeddingLoss.model_capacity = 'tiny'
 PretrainedCREPEEmbeddingLoss.activation_layer = 'classifier'
 PretrainedCREPEEmbeddingLoss.name = 'pretrained_crepe_embedding_loss'
 
-# SpectralLoss.loss_type = 'L1'
-# SpectralLoss.mag_weight = 1.0
-# SpectralLoss.logmag_weight = 1.0
+SpectralLoss.loss_type = 'L1'
+SpectralLoss.mag_weight = 1.0
+SpectralLoss.logmag_weight = 1.0
 
 # ==============
 # ProcessorGroup
@@ -84,7 +82,7 @@ FilteredNoise.scale_fn = @core.exp_sigmoid
 # Add
 processors.Add.name = 'add'
 
-# # Reverb
-# Reverb.name = 'reverb'
-# Reverb.reverb_length = 48000
-# Reverb.trainable = True
+# Reverb
+Reverb.name = 'reverb'
+Reverb.reverb_length = 48000
+Reverb.trainable = True
