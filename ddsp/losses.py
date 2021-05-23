@@ -481,6 +481,7 @@ class VAELoss(MultiLoss):
     # Multiply by beta for cyclic annealing
     beta = self.select_beta()
     losses['kld_loss'] = beta * tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_log_var - z_mean ** 2 -
+                                                                    tf.exp(z_log_var), axis=(1,2)), axis=0)
 
     return losses
 
