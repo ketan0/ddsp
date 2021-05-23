@@ -251,11 +251,170 @@ class SpectralLoss(Loss):
 
     return loss
 
-class SpectralLossVAECompat(SpectralLoss):
-    def __init__(self, *args, **kwargs):
-      super().__init__(*args, **kwargs)
-    def call(self, target_audio, audio, z_mean, z_log_var):
-      return super().call(target_audio, audio)
+@gin.register
+class SpectralLossVAECompat(Loss):
+  """Multi-scale spectrogram loss.
+
+  This loss is the bread-and-butter of comparing two audio signals. It offers
+  a range of options to compare spectrograms, many of which are redunant, but
+  emphasize different aspects of the signal. By far, the most common comparisons
+  are magnitudes (mag_weight) and log magnitudes (logmag_weight).
+  """
+
+  def __init__(self,
+               fft_sizes=(2048, 1024, 512, 256, 128, 64),
+               loss_type='L1',
+               mag_weight=1.0,
+               delta_time_weight=0.0,
+               delta_freq_weight=0.0,
+               cumsum_freq_weight=0.0,
+               logmag_weight=0.0,
+               loudness_weight=0.0,
+               name='spectral_loss'):
+    """Constructor, set loss weights of various components.
+
+    Args:
+      fft_sizes: Compare spectrograms at each of this list of fft sizes. Each
+        spectrogram has a time-frequency resolution trade-off based on fft size,
+        so comparing multiple scales allows multiple resolutions.
+      loss_type: One of 'L1', 'L2', or 'COSINE'.
+      mag_weight: Weight to compare linear magnitudes of spectrograms. Core
+        audio similarity loss. More sensitive to peak magnitudes than log
+        magnitudes.
+      delta_time_weight: Weight to compare the first finite difference of
+        spectrograms in time. Emphasizes changes of magnitude in time, such as
+        at transients.
+      delta_freq_weight: Weight to compare the first finite difference of
+        spectrograms in frequency. Emphasizes changes of magnitude in frequency,
+        such as at the boundaries of a stack of harmonics.
+      cumsum_freq_weight: Weight to compare the cumulative sum of spectrograms
+        across frequency for each slice in time. Similar to a 1-D Wasserstein
+        loss, this hopefully provides a non-vanishing gradient to push two
+        non-overlapping sinusoids towards eachother.
+      logmag_weight: Weight to compare log magnitudes of spectrograms. Core
+        audio similarity loss. More sensitive to quiet magnitudes than linear
+        magnitudes.
+      loudness_weight: Weight to compare the overall perceptual loudness of two
+        signals. Very high-level loss signal that is a subset of mag and
+        logmag losses.
+      name: Name of the module.
+    """
+    super().__init__(name=name)
+    self.fft_sizes = fft_sizes
+    self.loss_type = loss_type
+    self.mag_weight = mag_weight
+    self.delta_time_weight = delta_time_weight
+    self.delta_freq_weight = delta_freq_weight
+    self.cumsum_freq_weight = cumsum_freq_weight
+    self.logmag_weight = logmag_weight
+    self.loudness_weight = loudness_weight
+
+    self.spectrogram_ops = []
+    for size in self.fft_sizes:
+      spectrogram_op = functools.partial(spectral_ops.compute_mag, size=size)
+      self.spectrogram_ops.append(spectrogram_op)
+
+  def call(self, target_audio, audio, z_mean, z_log_var, weights=None):
+    loss = 0.0
+
+    diff = spectral_ops.diff
+    cumsum = tf.math.cumsum
+
+    # Compute loss for each fft size.
+    for loss_op in self.spectrogram_ops:
+      target_mag = loss_op(target_audio)
+      value_mag = loss_op(audio)
+
+      # Add magnitude loss.
+      if self.mag_weight > 0:
+        loss += self.mag_weight * mean_difference(
+            target_mag, value_mag, self.loss_type, weights=weights)
+
+      if self.delta_time_weight > 0:
+        target = diff(target_mag, axis=1)
+        value = diff(value_mag, axis=1)
+        loss += self.delta_time_weight * mean_difference(
+            target, value, self.loss_type, weights=weights)
+
+      if self.delta_freq_weight > 0:
+        target = diff(target_mag, axis=2)
+        value = diff(value_mag, axis=2)
+        loss += self.delta_freq_weight * mean_difference(
+            target, value, self.loss_type, weights=weights)
+
+      # TODO(kyriacos) normalize cumulative spectrogram
+      if self.cumsum_freq_weight > 0:
+        target = cumsum(target_mag, axis=2)
+        value = cumsum(value_mag, axis=2)
+        loss += self.cumsum_freq_weight * mean_difference(
+            target, value, self.loss_type, weights=weights)
+
+      # Add logmagnitude loss, reusing spectrogram.
+      if self.logmag_weight > 0:
+        target = spectral_ops.safe_log(target_mag)
+        value = spectral_ops.safe_log(value_mag)
+        loss += self.logmag_weight * mean_difference(
+            target, value, self.loss_type, weights=weights)
+
+    if self.loudness_weight > 0:
+      target = spectral_ops.compute_loudness(target_audio, n_fft=2048,
+                                             use_tf=True)
+      value = spectral_ops.compute_loudness(audio, n_fft=2048, use_tf=True)
+      loss += self.loudness_weight * mean_difference(
+          target, value, self.loss_type, weights=weights)
+
+    return loss
+
+
+class KLDLoss(MultiLoss):
+  """Variational autoencoder loss.
+
+  Reconstruction loss + KL-Divergence from prior
+  """
+
+  def __init__(self, cyclic_annealing=True):
+    """Constructor.
+    """
+    # super().__init__(name=name)
+    # self.spectral_loss = SpectralLoss()
+    # self.embedding_loss = PretrainedCREPEEmbeddingLoss()
+    self.cyclic_annealing = cyclic_annealing
+    if self.cyclic_annealing:
+      self.beta_cycle = self.frange_cycle_linear(30000)
+      self.beta_i = 0
+
+  def frange_cycle_linear(self, n_iter, start=0.0, stop=1.0,  n_cycle=4, ratio=0.5):
+    L = [stop] * n_iter
+    period = n_iter/n_cycle
+    step = (stop-start)/(period*ratio) # linear schedule
+
+    for c in range(n_cycle):
+      v, i = start, 0
+      while v <= stop and (int(i+c*period) < n_iter):
+        L[int(i+c*period)] = v
+        v += step
+        i += 1
+    return L
+
+  def select_beta(self):
+    if self.cyclic_annealing:
+      beta = self.beta_cycle[self.beta_i] #TODO
+      self.beta_i = (self.beta_i + 1) % len(self.beta_cycle)
+    else:
+      beta = 1
+    return beta
+
+  def call(self, target_audio, audio, z_mean, z_log_var):
+    losses = {}
+    # losses['reconstruction_loss'] = self.spectral_loss(target_audio, audio)
+    # losses['reconstruction_loss'] = self.embedding_loss(target_audio, audio)
+    # Multiply by beta for cyclic annealing
+    beta = self.select_beta()
+    losses['kld_loss'] = beta * tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_log_var - z_mean ** 2 -
+                                                                    tf.exp(z_log_var), axis=(1,2)), axis=0)
+
+    return losses
+
 
 @gin.register
 class VAELoss(MultiLoss):
