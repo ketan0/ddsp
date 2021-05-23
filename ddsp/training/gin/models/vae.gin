@@ -35,8 +35,8 @@ RnnFcDecoder.output_splits = (('amps', 1),
 
 # Losses
 VAE.losses = [
-    # @losses.VAELoss(),
-    @losses.SpectralLossVAECompat(),
+    @losses.VAELoss(),
+    # @losses.SpectralLossVAECompat(),
 ]
 
 PretrainedCREPEEmbeddingLoss.weight = 1.0
@@ -48,6 +48,11 @@ PretrainedCREPEEmbeddingLoss.name = 'pretrained_crepe_embedding_loss'
 SpectralLoss.loss_type = 'L1'
 SpectralLoss.mag_weight = 1.0
 SpectralLoss.logmag_weight = 1.0
+
+VAELoss.loss_type = 'L1'
+VAELoss.mag_weight = 1.0
+VAELoss.logmag_weight = 1.0
+VAELoss.cyclic_annealing = True
 
 # ==============
 # ProcessorGroup

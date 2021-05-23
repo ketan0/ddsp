@@ -423,11 +423,30 @@ class VAELoss(MultiLoss):
   Reconstruction loss + KL-Divergence from prior
   """
 
-  def __init__(self, name='vae_loss', cyclic_annealing=True):
+  def __init__(self,
+               fft_sizes=(2048, 1024, 512, 256, 128, 64),
+               loss_type='L1',
+               mag_weight=1.0,
+               delta_time_weight=0.0,
+               delta_freq_weight=0.0,
+               cumsum_freq_weight=0.0,
+               logmag_weight=0.0,
+               loudness_weight=0.0,
+               cyclic_annealing=True, name='vae_loss'):
     """Constructor.
     """
     super().__init__(name=name)
-    self.spectral_loss = SpectralLoss()
+
+    self.spectral_loss = SpectralLoss(
+      fft_sizes=fft_sizes,
+      loss_type=loss_type,
+      mag_weight=mag_weight,
+      delta_time_weight=delta_time_weight,
+      delta_freq_weight=delta_freq_weight,
+      cumsum_freq_weight=cumsum_freq_weight,
+      logmag_weight=logmag_weight,
+      loudness_weight=loudness_weight
+    )
     # self.embedding_loss = PretrainedCREPEEmbeddingLoss()
     self.cyclic_annealing = cyclic_annealing
     if self.cyclic_annealing:
@@ -460,9 +479,8 @@ class VAELoss(MultiLoss):
     losses['reconstruction_loss'] = self.spectral_loss(target_audio, audio)
     # losses['reconstruction_loss'] = self.embedding_loss(target_audio, audio)
     # Multiply by beta for cyclic annealing
-    # beta = self.select_beta()
-    # losses['kld_loss'] = beta * tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_log_var - z_mean ** 2 -
-    #                                                                 tf.exp(z_log_var), axis=(1,2)), axis=0)
+    beta = self.select_beta()
+    losses['kld_loss'] = beta * tf.reduce_mean(-0.5 * tf.reduce_sum(1 + z_log_var - z_mean ** 2 -
 
     return losses
 
