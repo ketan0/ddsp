@@ -17,6 +17,7 @@
 
 import ddsp
 from ddsp.training.models.model import Model
+import tensorflow as tf
 
 class VAE(Model):
   """Wrap the model function for dependency injection with gin."""
@@ -47,6 +48,21 @@ class VAE(Model):
     """Get generated audio by decoding than processing."""
     features.update(self.decoder(features, training=training))
     return self.processor_group(features)
+
+  def sample(self, features, num_samples=1):
+    """Decode a random sample from the latent space of the VAE"""
+    features.update({'z': tf.random.normal((num_samples, self.encoder.z_dims),
+                                           mean=0., stddev=1.)})
+    features.update(self.decoder(features, training=False))
+
+    # Run through processor group.
+    pg_out = self.processor_group(features, return_outputs_dict=True)
+
+    # Parse outputs
+    outputs = pg_out['controls']
+    outputs['audio_synth'] = pg_out['signal']
+
+    return outputs
 
   def get_audio_from_outputs(self, outputs):
     """Extract audio output tensor from outputs dict of call()."""

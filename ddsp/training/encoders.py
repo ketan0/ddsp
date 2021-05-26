@@ -170,6 +170,7 @@ class MfccTimeDistributedRnnVariationalEncoder(ZEncoder):
     self.z_norm = nn.Normalize('instance')
     self.rnn = nn.Rnn(rnn_channels, rnn_type)
     self._enc_mu_log_var = tfkl.Dense(2 * z_dims)
+    self.z_dims = z_dims
 
   def _sample_latent(self, h_enc):
     """
