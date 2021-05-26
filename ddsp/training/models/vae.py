@@ -51,7 +51,11 @@ class VAE(Model):
 
   def sample(self, features, num_samples=1):
     """Decode a random sample from the latent space of the VAE"""
-    features.update({'z': tf.random.normal((num_samples, self.encoder.z_dims),
+    if self.preprocessor is not None:
+      features.update(self.preprocessor(features, training=False))
+    features.update({'z': tf.random.normal((num_samples,
+                                            self.encoder.z_time_steps,
+                                            self.encoder.z_dims),
                                            mean=0., stddev=1.)})
     features.update(self.decoder(features, training=False))
 
