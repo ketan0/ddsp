@@ -53,12 +53,9 @@ class VAE(Model):
     """Decode a random sample from the latent space of the VAE"""
     if self.preprocessor is not None:
       features.update(self.preprocessor(features, training=False))
-    features.update({'z': tf.random.normal((num_samples,
-                                            self.preprocessor.time_steps,
-                                            self.encoder.z_dims),
-                                           mean=0., stddev=1.)})
+    z_shape = (num_samples, self.preprocessor.time_steps, self.encoder.z_dims)
+    features.update({'z': tf.random.normal(z_shape, mean=0., stddev=1.)})
     features.update(self.decoder(features, training=False))
-
     # Run through processor group.
     pg_out = self.processor_group(features, return_outputs_dict=True)
 
