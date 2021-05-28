@@ -54,7 +54,7 @@ class VAE(Model):
     if self.preprocessor is not None:
       features.update(self.preprocessor(features, training=False))
     features.update({'z': tf.random.normal((num_samples,
-                                            self.encoder.z_time_steps,
+                                            self.preprocessor.time_steps,
                                             self.encoder.z_dims),
                                            mean=0., stddev=1.)})
     features.update(self.decoder(features, training=False))
