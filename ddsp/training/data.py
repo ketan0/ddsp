@@ -166,9 +166,9 @@ class NSynthTfds(TfdsProvider):
     dataset = super().get_dataset(shuffle)
     dataset = dataset.map(preprocess_ex, num_parallel_calls=_AUTOTUNE)
     if self.pitch_subset:
-      dataset = dataset.filter(lambda ex: ex in pitch_subset)
+      dataset = dataset.filter(lambda ex: ex in self.pitch_subset)
     if self.instrument_subset:
-      dataset = dataset.filter(lambda ex: ex in instrument_subset)
+      dataset = dataset.filter(lambda ex: ex in self.instrument_subset)
     return dataset
 
 
