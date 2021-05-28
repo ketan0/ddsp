@@ -120,7 +120,9 @@ class NSynthTfds(TfdsProvider):
                split='train',
                data_dir='gs://tfds-data/datasets',
                sample_rate=16000,
-               frame_rate=250):
+               frame_rate=250,
+               pitch_subset=None,
+               instrument_subset=None):
     """TfdsProvider constructor.
 
     Args:
@@ -137,6 +139,8 @@ class NSynthTfds(TfdsProvider):
           'GCP, this will be very slow, and it is recommended you prepare '
           'the dataset locally with TFDS and set the data_dir appropriately.')
     super().__init__(name, split, data_dir, sample_rate, frame_rate)
+    self.pitch_subset = pitch_subset
+    self.instrument_subset = instrument_subset
 
   def get_dataset(self, shuffle=True):
     """Returns dataset with slight restructuring of feature dictionary."""
@@ -161,6 +165,10 @@ class NSynthTfds(TfdsProvider):
       }
     dataset = super().get_dataset(shuffle)
     dataset = dataset.map(preprocess_ex, num_parallel_calls=_AUTOTUNE)
+    if self.pitch_subset:
+      dataset = dataset.filter(lambda ex: ex in pitch_subset)
+    if self.instrument_subset:
+      dataset = dataset.filter(lambda ex: ex in instrument_subset)
     return dataset
 
 
