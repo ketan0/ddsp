@@ -1,0 +1,92 @@
+# -*-Python-*-
+# VAE that decodes from z.
+# z = encoder(audio)
+
+import ddsp
+import ddsp.training
+
+# =====
+# Model
+# =====
+
+get_model.model = @models.VAE()
+
+# Preprocessor
+VAE.preprocessor = None
+
+# Encoder
+VAE.encoder = @encoders.MfccTimeDistributedRnnVariationalEncoder()
+MfccTimeDistributedRnnVariationalEncoder.rnn_channels = 512
+MfccTimeDistributedRnnVariationalEncoder.rnn_type = 'gru'
+MfccTimeDistributedRnnVariationalEncoder.z_dims = 16
+MfccTimeDistributedRnnVariationalEncoder.z_time_steps = 125
+
+# Decoder
+VAE.decoder = @decoders.RnnFcDecoder()
+RnnFcDecoder.rnn_channels = 512
+RnnFcDecoder.rnn_type = 'gru'
+RnnFcDecoder.ch = 512
+RnnFcDecoder.layers_per_stack = 6
+RnnFcDecoder.input_keys = ('z',)
+RnnFcDecoder.output_splits = (('amps', 1),
+                              ('harmonic_distribution', 100),
+                              ('noise_magnitudes', 65))
+
+# Losses
+VAE.losses = [
+    @losses.VAELoss(),
+    # @losses.SpectralLossVAECompat(),
+]
+
+PretrainedCREPEEmbeddingLoss.weight = 1.0
+PretrainedCREPEEmbeddingLoss.loss_type = 'L1'
+PretrainedCREPEEmbeddingLoss.model_capacity = 'tiny'
+PretrainedCREPEEmbeddingLoss.activation_layer = 'classifier'
+PretrainedCREPEEmbeddingLoss.name = 'pretrained_crepe_embedding_loss'
+
+SpectralLoss.loss_type = 'L1'
+SpectralLoss.mag_weight = 1.0
+SpectralLoss.logmag_weight = 1.0
+
+VAELoss.loss_type = 'L1'
+VAELoss.mag_weight = 1.0
+VAELoss.logmag_weight = 1.0
+VAELoss.cyclic_annealing = True
+
+# ==============
+# ProcessorGroup
+# ==============
+
+VAE.processor_group = @processors.ProcessorGroup()
+
+ProcessorGroup.dag = [
+  (@synths.Harmonic(),
+    ['amps', 'harmonic_distribution', 'f0_hz']),
+  (@synths.FilteredNoise(),
+    ['noise_magnitudes']),
+  (@processors.Add(),
+    ['filtered_noise/signal', 'harmonic/signal']),
+  # (@effects.Reverb(),
+  #   ['add/signal']),
+]
+
+# Harmonic Synthesizer
+Harmonic.name = 'harmonic'
+Harmonic.n_samples = 64000
+Harmonic.sample_rate = 16000
+Harmonic.normalize_below_nyquist = True
+Harmonic.scale_fn = @core.exp_sigmoid
+
+# Filtered Noise Synthesizer
+FilteredNoise.name = 'filtered_noise'
+FilteredNoise.n_samples = 64000
+FilteredNoise.window_size = 0
+FilteredNoise.scale_fn = @core.exp_sigmoid
+
+# Add
+processors.Add.name = 'add'
+
+# Reverb
+Reverb.name = 'reverb'
+Reverb.reverb_length = 48000
+Reverb.trainable = True
