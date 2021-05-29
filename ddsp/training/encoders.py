@@ -38,7 +38,7 @@ class ZEncoder(nn.DictLayer):
     super().__init__(input_keys, output_keys=['z'], **kwargs)
 
     # TODO(jesseengel): remove dependence on arbitrary key.
-    self.input_keys.append('f0_scaled')  # Input to get n_timesteps dynamically.
+    # self.input_keys.append('f0_scaled')  # Input to get n_timesteps dynamically.
 
   def call(self, *args, **unused_kwargs):
     """Takes in input tensors and returns a latent tensor z."""
