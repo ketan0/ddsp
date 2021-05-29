@@ -43,7 +43,7 @@ class ZEncoder(nn.DictLayer):
   def call(self, *args, **unused_kwargs):
     """Takes in input tensors and returns a latent tensor z."""
     time_steps = int(args[-1].shape[1])
-    inputs = args[:-1]  # Last input just used for time_steps.
+    # inputs = args[:-1]  # Last input just used for time_steps.
     z = self.compute_z(*inputs)
     return self.expand_z(z, time_steps)
 
