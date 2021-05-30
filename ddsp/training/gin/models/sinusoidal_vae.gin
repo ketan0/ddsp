@@ -39,6 +39,7 @@ VAE.losses = [
 VAELoss.loss_type = 'L1'
 VAELoss.mag_weight = 1.0
 VAELoss.logmag_weight = 1.0
+VAELoss.delta_freq_weight = 1.0
 VAELoss.cyclic_annealing = True
 
 VAE.processor_group = @processors.ProcessorGroup()
