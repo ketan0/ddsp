@@ -32,20 +32,27 @@ class ZEncoder(nn.DictLayer):
   Input_keys from compute_z() instead of call(), output_keys are always ['z'].
   """
 
-  def __init__(self, input_keys=None, **kwargs):
+  def __init__(self, input_keys=None, expand=True, **kwargs):
     """Constructor."""
     input_keys = input_keys or self.get_argument_names('compute_z')
     super().__init__(input_keys, output_keys=['z'], **kwargs)
+    self.expand = expand
 
     # TODO(jesseengel): remove dependence on arbitrary key.
-    # self.input_keys.append('f0_scaled')  # Input to get n_timesteps dynamically.
+    if self.expand:
+      self.input_keys.append('f0_scaled')  # Input to get n_timesteps dynamically.
 
   def call(self, *args, **unused_kwargs):
     """Takes in input tensors and returns a latent tensor z."""
-    time_steps = int(args[-1].shape[1])
-    # inputs = args[:-1]  # Last input just used for time_steps.
-    z = self.compute_z(*inputs)
-    return self.expand_z(z, time_steps)
+    if self.expand:
+      inputs = args[:-1]
+      time_steps = int(args[-1].shape[1])
+      z = self.compute_z(*inputs)
+      z = self.expand_z(z, time_steps)
+    else:
+      inputs = args
+      z = self.compute_z(*inputs)
+    return z
 
   def expand_z(self, z, time_steps):
     """Make sure z has same temporal resolution as other conditioning."""
