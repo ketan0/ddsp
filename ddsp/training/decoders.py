@@ -24,6 +24,49 @@ tfkl = tf.keras.layers
 
 
 # ------------------ Decoders --------------------------------------------------
+
+
+@gin.register
+class ResnetSinusoidalDecoder(nn.DictLayer):
+  """This encoder maps directly from audio to synthesizer parameters.
+
+  EXPERIMENTAL
+
+  It is equivalent of a base Encoder and Decoder together.
+  """
+
+  def __init__(self,
+               output_splits=(('frequencies', 100 * 64),
+                              ('amplitudes', 100),
+                              ('noise_magnitudes', 60)),
+               size='small',
+               **kwargs):
+    super().__init__(output_keys=[key for key, dim in output_splits], **kwargs)
+    self.output_splits = output_splits
+
+    # Layers.
+    self.resnet = nn.ResNet(size=size)
+    self.dense_outs = [tfkl.Dense(v[1]) for v in output_splits]
+
+  def call(self, audio):
+    """Updates conditioning with z and (optionally) f0."""
+    outputs = {}
+
+    # [batch, 125, z_dim]
+    mag = mag[:, :, :, tf.newaxis]
+    x = self.resnet(mag)
+
+    # [batch, 125, 8, 1024]
+    # # Collapse the frequency dimension.
+    x = tf.reshape(x, [int(x.shape[0]), int(x.shape[1]), -1])
+
+    # [batch, 125, 8192]
+    for layer, key in zip(self.dense_outs, self.output_keys):
+      outputs[key] = layer(x)
+
+    return outputs
+
+
 @gin.register
 class RnnFcDecoder(nn.OutputSplitsLayer):
   """RNN and FC stacks for f0 and loudness."""
