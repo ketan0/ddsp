@@ -1,0 +1,60 @@
+-*- Python -*-
+import ddsp
+import ddsp.training
+
+get_model.model = @models.VAE()
+
+# ==============
+# ProcessorGroup
+# ==============
+
+# Preprocessor
+VAE.preprocessor = None
+
+VAE.encoder = @encoders.MfccTimeDistributedRnnVariationalEncoder()
+MfccTimeDistributedRnnVariationalEncoder.rnn_channels = 512
+MfccTimeDistributedRnnVariationalEncoder.rnn_type = 'gru'
+MfccTimeDistributedRnnVariationalEncoder.z_dims = 32
+MfccTimeDistributedRnnVariationalEncoder.z_time_steps = 125
+MfccTimeDistributedRnnVariationalEncoder.expand = False
+
+
+VAE.decoder = @decoders.ResnetSinusoidalDecoder()
+ResnetSinusoidalDecoder.size='small'
+ResnetSinusoidalDecoder.output_splits=(('frequencies', 6400),
+                                       ('amplitudes', 100),
+                                       ('noise_magnitudes', 60))
+
+# Losses
+VAE.losses = [
+    @losses.VAELoss(),
+]
+
+VAELoss.loss_type = 'L2'
+VAELoss.mag_weight = 1.0
+VAELoss.logmag_weight = 1.0
+VAELoss.cyclic_annealing = True
+
+VAE.processor_group = @processors.ProcessorGroup()
+
+ProcessorGroup.dag = [
+    (@synths.Sinusoidal,
+        ['amplitudes', 'frequencies']),
+    (@synths.FilteredNoise(),
+        ['noise_magnitudes']),
+    (@processors.Add(),
+        ['sinusoidal/signal',
+        'filtered_noise/signal']),
+]
+
+# Sinusoidal Synthesizer
+Sinusoidal.name = 'sinusoidal'
+Sinusoidal.n_samples = 64000
+Sinusoidal.sample_rate = 16000
+Sinusoidal.freq_scale_fn = None
+
+# Filtered Noise Synthesizer
+FilteredNoise.name = 'filtered_noise'
+FilteredNoise.n_samples = 64000
+FilteredNoise.window_size = 0
+FilteredNoise.scale_fn = None
