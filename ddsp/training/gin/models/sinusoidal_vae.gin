@@ -36,7 +36,7 @@ VAE.losses = [
     @losses.VAELoss(),
 ]
 
-VAELoss.loss_type = 'L2'
+VAELoss.loss_type = 'L1'
 VAELoss.mag_weight = 1.0
 VAELoss.logmag_weight = 1.0
 VAELoss.cyclic_annealing = True
