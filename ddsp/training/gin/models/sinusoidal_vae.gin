@@ -42,7 +42,7 @@ VAELoss.cyclic_annealing = True
 VAE.processor_group = @processors.ProcessorGroup()
 
 ProcessorGroup.dag = [
-    (@synths.Sinusoidal,
+    (@synths.Sinusoidal(),
         ['amplitudes', 'frequencies']),
     (@synths.FilteredNoise(),
         ['noise_magnitudes']),
