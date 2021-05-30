@@ -19,16 +19,17 @@ MfccTimeDistributedRnnVariationalEncoder.rnn_channels = 512
 MfccTimeDistributedRnnVariationalEncoder.rnn_type = 'gru'
 MfccTimeDistributedRnnVariationalEncoder.z_dims = 32
 MfccTimeDistributedRnnVariationalEncoder.z_time_steps = 125
+MfccTimeDistributedRnnVariationalEncoder.input_keys = None
 MfccTimeDistributedRnnVariationalEncoder.expand_with_f0 = False
 MfccTimeDistributedRnnVariationalEncoder.expand_time_steps = 1000
 
 
 VAE.decoder = @decoders.ResnetSinusoidalDecoder()
-ResnetSinusoidalDecoder.input_keys=('z',)
-ResnetSinusoidalDecoder.size='small'
-ResnetSinusoidalDecoder.output_splits=(('frequencies', 6400),
-                                       ('amplitudes', 100),
-                                       ('noise_magnitudes', 60))
+ResnetSinusoidalDecoder.input_keys = ('z',)
+ResnetSinusoidalDecoder.size = 'small'
+ResnetSinusoidalDecoder.output_splits = (('frequencies', 6400),
+                                         ('amplitudes', 100),
+                                         ('noise_magnitudes', 60))
 
 # Losses
 VAE.losses = [
