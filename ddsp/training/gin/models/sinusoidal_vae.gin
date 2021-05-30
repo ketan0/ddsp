@@ -1,4 +1,7 @@
--*- Python -*-
+# -*-Python-*-
+# VAE that decodes from z.
+# z = encoder(audio)
+#
 import ddsp
 import ddsp.training
 
