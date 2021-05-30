@@ -55,7 +55,9 @@ ProcessorGroup.dag = [
 Sinusoidal.name = 'sinusoidal'
 Sinusoidal.n_samples = 64000
 Sinusoidal.sample_rate = 16000
-Sinusoidal.freq_scale_fn = None
+Sinusoidal.amp_scale_fn = @core.exp_sigmoid
+Sinusoidal.freq_scale_fn = @ddsp.core.frequencies_softmax
+frequencies_softmax.depth = 64
 
 # Filtered Noise Synthesizer
 FilteredNoise.name = 'filtered_noise'
