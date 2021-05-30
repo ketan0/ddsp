@@ -36,25 +36,26 @@ class ResnetSinusoidalDecoder(nn.DictLayer):
   """
 
   def __init__(self,
+               input_keys=('z',),
                output_splits=(('frequencies', 100 * 64),
                               ('amplitudes', 100),
                               ('noise_magnitudes', 60)),
                size='small',
                **kwargs):
-    super().__init__(output_keys=[key for key, dim in output_splits], **kwargs)
+    super().__init__(input_keys=input_keys, output_keys=[key for key, dim in output_splits], **kwargs)
     self.output_splits = output_splits
 
     # Layers.
     self.resnet = nn.ResNet(size=size)
     self.dense_outs = [tfkl.Dense(v[1]) for v in output_splits]
 
-  def call(self, audio):
+  def call(self, z):
     """Updates conditioning with z and (optionally) f0."""
     outputs = {}
 
     # [batch, 125, z_dim]
-    mag = mag[:, :, :, tf.newaxis]
-    x = self.resnet(mag)
+    z = z[:, :, :, tf.newaxis]
+    x = self.resnet(z)
 
     # [batch, 125, 8, 1024]
     # # Collapse the frequency dimension.

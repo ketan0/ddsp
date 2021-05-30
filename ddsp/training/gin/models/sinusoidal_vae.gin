@@ -20,6 +20,7 @@ MfccTimeDistributedRnnVariationalEncoder.expand = False
 
 
 VAE.decoder = @decoders.ResnetSinusoidalDecoder()
+ResnetSinusoidalDecoder.input_keys=('z',)
 ResnetSinusoidalDecoder.size='small'
 ResnetSinusoidalDecoder.output_splits=(('frequencies', 6400),
                                        ('amplitudes', 100),
