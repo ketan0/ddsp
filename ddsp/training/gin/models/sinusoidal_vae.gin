@@ -19,7 +19,8 @@ MfccTimeDistributedRnnVariationalEncoder.rnn_channels = 512
 MfccTimeDistributedRnnVariationalEncoder.rnn_type = 'gru'
 MfccTimeDistributedRnnVariationalEncoder.z_dims = 32
 MfccTimeDistributedRnnVariationalEncoder.z_time_steps = 125
-MfccTimeDistributedRnnVariationalEncoder.expand = False
+MfccTimeDistributedRnnVariationalEncoder.expand_with_f0 = False
+MfccTimeDistributedRnnVariationalEncoder.expand_time_steps = 1000
 
 
 VAE.decoder = @decoders.ResnetSinusoidalDecoder()
@@ -56,7 +57,7 @@ Sinusoidal.name = 'sinusoidal'
 Sinusoidal.n_samples = 64000
 Sinusoidal.sample_rate = 16000
 Sinusoidal.amp_scale_fn = @core.exp_sigmoid
-Sinusoidal.freq_scale_fn = @ddsp.core.frequencies_softmax
+Sinusoidal.freq_scale_fn = @core.frequencies_softmax
 frequencies_softmax.depth = 64
 
 # Filtered Noise Synthesizer
